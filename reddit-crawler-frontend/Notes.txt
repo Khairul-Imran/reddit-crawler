@@ -1,0 +1,16 @@
+
+npm create vite@latest reddit-crawler-frontend -- --template react-ts
+
+cd reddit-crawler-frontend
+
+npm install
+
+npm run dev
+
+
+npm install -D tailwindcss postcss autoprefixer
+
+npx tailwindcss init -p
+
+
+-----------------------------------------------------------------------------------------------------------
