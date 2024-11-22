@@ -148,7 +148,7 @@ public class RedditDataParser {
     }
     
     private String parsePostUrl(JsonObject data) {
-        return data.getString("permalink", "");
+        return "https://reddit.com" + data.getString("permalink", "");
     }
     
     private boolean parseIsVideo(JsonObject data) {
