@@ -42,15 +42,15 @@ public class RedditDataParser {
             JsonArray children = jsonObject.getJsonObject("data").getJsonArray("children");
             
             for (JsonValue child : children) {
-                JsonObject postObject = child.asJsonObject();
+                JsonObject postObject = child.asJsonObject(); // Represents each data-Json Object inside the "children array"
                 RedditPostData postData = new RedditPostData(); // Create RedditPostData
                 
                 // Set kind ("t3")
                 postData.setKind(postObject.getString("kind", ""));
                 
-                // Create and set RedditPost
+                // Create and set individual RedditPost objects
                 RedditPost post = new RedditPost();
-                JsonObject data = postObject.getJsonObject("data");
+                JsonObject data = postObject.getJsonObject("data"); // Accesses the "data" object in each reddit post
                 
                 post.setId(parseId(data));
                 post.setSubReddit(parseSubReddit(data));
@@ -73,10 +73,12 @@ public class RedditDataParser {
                 post.setDistinguished(parseDistinguished(data));
                 
                 postData.setData(post);
-                posts.add(postData);
+                posts.add(postData); // Add to the list
+
+                // Then repeat for the remaining posts inside the children array
             }
 
-            listingData.setChildren(posts);
+            listingData.setChildren(posts); // List of RedditPostData
 
             // Create and return RedditApiResponse
             RedditApiResponse response = new RedditApiResponse();

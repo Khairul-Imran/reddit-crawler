@@ -2,16 +2,15 @@ package com.example.reddit_crawler_backend.Config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+@Configuration
 public class RedditApiConfig {
     
     @Value("${reddit.base-url}")
     private String apiUrl;
-
-    // @Value("${weatherapi.key}")
-    // private String apiKey;
 
     @Value("${reddit.user-agent}")
     private String userAgent;
@@ -35,10 +34,6 @@ public class RedditApiConfig {
         return apiUrl;
     }
 
-    // public String getApiKey() {
-    //     return apiKey;
-    // }
-
     public String getUserAgent() {
         return userAgent;
     }
@@ -46,5 +41,4 @@ public class RedditApiConfig {
     public int getTimeout() {
         return timeout;
     }
-
 }
