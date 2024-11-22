@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RedditApiResponse {
-    private RedditListingData data;
+public class RedditPostData {
+    private String kind;  // Will be "t3" for posts
+    private RedditPost data;  // Your actual post data
 }
