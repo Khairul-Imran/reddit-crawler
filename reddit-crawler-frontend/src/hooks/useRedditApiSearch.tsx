@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
-import { RedditApiResponse } from "../types/RedditPostData";
+import { RedditApiResponse, RedditPost } from "../types/RedditPostData";
 import { redditDataApi } from "../services/api/redditDataApi";
 import { ApiError } from "../services/api/baseApi";
 
 interface UseRedditSearchResult {
-    redditData: RedditApiResponse | undefined;
+    // redditData: RedditApiResponse | undefined;
+    redditData: RedditPost[];
     isLoading: boolean;
     error: string | null;
     searchReddit: (subreddit: string) => Promise<void>;
@@ -13,7 +14,8 @@ interface UseRedditSearchResult {
 // Custom hook
 export function useRedditApiSearch(): UseRedditSearchResult {
 
-    const [redditData, setRedditData] = useState<RedditApiResponse>();
+    const [redditData, setRedditData] = useState<RedditPost[]>([]);
+    // const [redditData, setRedditData] = useState<RedditApiResponse>(); // Temporarily commenting out
     const [isLoading, setIsLoading] = useState(false); // Tracks loading state
     const [error, setError] = useState<string | null>(null); // Store any errors
 
@@ -29,10 +31,16 @@ export function useRedditApiSearch(): UseRedditSearchResult {
         setError(null);
 
         try {
+            const response = await redditDataApi.getTop20(subreddit);
+            console.log("useRedditApiSearch: Received data: ", response);
 
-            const data = await redditDataApi.getTop20(subreddit);
-            console.log("useRedditApiSearch: Received data: ", data);
-            setRedditData(data);
+            // Retrieve the RedditPost data array
+            const posts: RedditPost[] = response.data.children.map(child => ({
+                ...child.data,
+                postId: child.data.id
+            }));
+
+            setRedditData(posts);
         } catch (error) {
             console.error("Search error: ", error);
 

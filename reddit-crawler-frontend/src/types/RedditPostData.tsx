@@ -1,22 +1,22 @@
 export interface RedditPost {
-    postId: string,
+    id: string,
     subReddit: string,
-    title: string,
-    authorName: string,
+    title: string, // used
+    authorName: string, // used
     upvoteRatio: number,
-    upvotes: number,
+    upvotes: number, // used
     score: number,
     totalAwardsReceived: number,
-    totalNumberOfComments: number,
-    createdTime: number,
-    photoUrl: string,
-    postUrl: string,
-    isVideo: boolean,
+    totalNumberOfComments: number, // used
+    createdTime: number, // used
+    photoUrl: string, // used
+    postUrl: string, // used
+    isVideo: boolean, // used
     postHint: string,
     domain: string,
     stickied: boolean,
     over18: boolean,
-    numberOfCrossposts: number,
+    numberOfCrossposts: number, // used
     distinguished: string
 };
 
