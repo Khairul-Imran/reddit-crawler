@@ -7,29 +7,30 @@ interface PostCardProps {
 function RedditPostCard({ post }: PostCardProps){
 
     return(
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
             {post.photoUrl && !post.isVideo && (
-                <div className="aspect-w-16 aspect-h-9">
+                <div className="w-full">
                     <img 
                         src={post.photoUrl} 
                         alt={post.title}
-                        className="object-cover w-full h-full"
+                        className="w-full h-auto max-h-[300px] object-cover"
+                        // className="object-cover w-full h-full"
                     />
                 </div>
             )}
 
-            <div className="p-4">
+            <div className="p-4 flex flex-col flex-grow justify-end">
                 <h3 className="font-bold text-lg mb-2 line-clamp-2">
                     {post.title}
                 </h3>
-                <div className="flex items-center text-sm text-gray-600 gap-4">
+                <div className="flex items-center text-sm text-gray-600 gap-4 mb-3">
                     <span>👤 {post.authorName}</span>
                     <span>⬆️ {post.upvotes.toLocaleString()}</span>
                     <span>💬 {post.totalNumberOfComments.toLocaleString()}</span>
-                    {/* Remember to get an icon for this */}
                     <span>🔄 {post.numberOfCrossposts} crosspost{post.numberOfCrossposts !== 1 ? 's' : ''}</span>
                 </div>
-                <div className="mt-3 flex justify-between items-center">
+                
+                <div className="flex justify-between items-center mt-6">
                     <span className="text-sm text-gray-500">
                         {new Date(post.createdTime * 1000).toLocaleDateString()}
                     </span>
