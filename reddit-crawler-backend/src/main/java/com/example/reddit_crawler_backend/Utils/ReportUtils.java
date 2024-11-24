@@ -7,8 +7,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.OptionalDouble;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.example.reddit_crawler_backend.Models.RedditPost;
@@ -16,7 +14,6 @@ import com.example.reddit_crawler_backend.Models.RedditPost;
 @Component
 public class ReportUtils {
     
-    // private static final Logger logger = LoggerFactory.getLogger(ReportUtils.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**

@@ -1,6 +1,7 @@
 package com.example.reddit_crawler_backend.Services;
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -20,6 +21,8 @@ import com.example.reddit_crawler_backend.Config.RedditApiConfig;
 import com.example.reddit_crawler_backend.Exceptions.RedditDataParsingException;
 import com.example.reddit_crawler_backend.Exceptions.RedditServiceException;
 import com.example.reddit_crawler_backend.Models.RedditApiResponse;
+import com.example.reddit_crawler_backend.Models.RedditPost;
+import com.example.reddit_crawler_backend.Models.RedditPostData;
 import com.example.reddit_crawler_backend.Utils.RedditDataParser;
 
 @Service
@@ -28,13 +31,23 @@ public class RedditService {
     private final RestTemplate restTemplate;
     private final RedditApiConfig config;
     private final RedditDataParser redditDataParser;
+    private final RedditPostService redditPostService;
     private final Logger logger = LoggerFactory.getLogger(RedditService.class);
 
+    // In-memory storage of latest fetch
+    private List<RedditPost> latestFetchedPosts;
+    private String currentSubreddit;
+    private LocalDateTime lastFetchTime;
+
     @Autowired
-    public RedditService(RestTemplate restTemplate, RedditApiConfig config, RedditDataParser redditDataParser) {
+    public RedditService(RestTemplate restTemplate, 
+                    RedditApiConfig config, 
+                    RedditDataParser redditDataParser, 
+                    RedditPostService redditPostService) {
         this.restTemplate = restTemplate;
         this.config = config;
         this.redditDataParser = redditDataParser;
+        this.redditPostService = redditPostService;
     }
 
     public RedditApiResponse getTop20Posts(String subreddit) throws RedditServiceException {
@@ -49,12 +62,29 @@ public class RedditService {
                 .build();
 
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+            
+            /*
+             * NEW PART
+             */
 
-            if (response.getStatusCode().is2xxSuccessful()) {
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 // Check the rate limits after a successful response
                 checkRateLimits(response.getHeaders());
-                
-                return redditDataParser.parseRedditResponse(response.getBody());
+
+                RedditApiResponse redditResponse = redditDataParser.parseRedditResponse(response.getBody());
+
+                // Store the latest fetch in memory -> for generating report
+                this.latestFetchedPosts = redditResponse.getData().getChildren().stream()
+                    .map(RedditPostData::getData)
+                    .toList();
+                this.currentSubreddit = subreddit;
+                this.lastFetchTime = LocalDateTime.now();
+
+                // Save the posts to DB
+                redditPostService.processNewPosts(this.latestFetchedPosts);
+
+                // return redditDataParser.parseRedditResponse(response.getBody());
+                return redditResponse;
             } else {
                 logger.error("Error response from RedditAPI. Status: {}", response.getStatusCode());
                 throw new RedditServiceException("Failed to fetch reddit posts data. Status: " + response.getStatusCode());
@@ -71,6 +101,31 @@ public class RedditService {
         }
     }
 
+
+    // Getters for the latest fetch data
+    public List<RedditPost> getLatestFetchedPosts() {
+        if (latestFetchedPosts == null) {
+            throw new RuntimeException("No posts have been fetched yet");
+        }
+        return latestFetchedPosts;
+    }
+
+    public String getCurrentSubreddit() {
+        if (currentSubreddit == null) {
+            throw new RuntimeException("No subreddit has been fetched yet");
+        }
+        return currentSubreddit;
+    }
+
+    public LocalDateTime getLastFetchTime() {
+        if (lastFetchTime == null) {
+            throw new RuntimeException("No fetch has been performed yet");
+        }
+        return lastFetchTime;
+    }
+
+
+    // Helper methods
     private String buildUrl(String subreddit) {
         return UriComponentsBuilder
             // https://www.reddit.com/r/memes/top.json?t=day

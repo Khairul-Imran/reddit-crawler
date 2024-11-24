@@ -1,12 +1,13 @@
 package com.example.reddit_crawler_backend.Models;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 public class RedditPost {
 
     private String id; // Post id
@@ -24,11 +25,11 @@ public class RedditPost {
     private String photoUrl; // Preview - "url"
     private String postUrl; // "permalink"
 
-    private boolean isVideo; // (content type indicator)
+    private Boolean isVideo; // (content type indicator)
     private String postHint; // (type of post)
     private String domain; // (source of content) -> not sure what this is for
-    private boolean stickied; // (pinned posts)
-    private boolean over18; // (NSFW flag)
+    private Boolean stickied; // (pinned posts)
+    private Boolean over18; // (NSFW flag)
     private Integer numberOfCrossposts; // Number of times this post has been shared to other subreddits
     private String distinguished; // Indicates if the post is marked by moderators or admins
     // null (regular post)

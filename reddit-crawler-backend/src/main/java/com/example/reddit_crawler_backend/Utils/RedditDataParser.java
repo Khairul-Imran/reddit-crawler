@@ -64,7 +64,7 @@ public class RedditDataParser {
                 post.setCreatedTime(parseCreatedTime(data));
                 post.setPhotoUrl(parsePhotoUrl(data));
                 post.setPostUrl(parsePostUrl(data));
-                post.setVideo(parseIsVideo(data));
+                post.setIsVideo(parseIsVideo(data));
                 post.setPostHint(parsePostHint(data));
                 post.setDomain(parseDomain(data));
                 post.setStickied(parseStickied(data));
