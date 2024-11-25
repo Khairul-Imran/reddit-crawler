@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { redditDataApi } from "../../services/api/redditDataApi";
+import { config } from "../../config/config";
 
 // Allows parent to pass styling
 interface TelegramSectionProps {
@@ -9,10 +10,6 @@ interface TelegramSectionProps {
 function TelegramSection({ className = "" } : TelegramSectionProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // To be transferred to environment variables/config later
-    const BOT_USERNAME = "RedditTop20Bot";
-    const BOT_URL = `https://t.me/${BOT_USERNAME}`;
 
     const handleGenerateReport = async () => {
         setIsGenerating(true);
@@ -49,7 +46,8 @@ function TelegramSection({ className = "" } : TelegramSectionProps) {
                 )}
             </button>
             <a
-            href={BOT_URL}
+                // href={BOT_URL}
+                href={config.telegram.botUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#0088cc] text-white px-4 py-2 rounded-lg 
