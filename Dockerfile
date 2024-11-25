@@ -60,13 +60,29 @@ COPY --from=backend-build /sbapp/target/*.jar app.jar
 
 ENV PORT=8080
 
+ENV MYSQL_URL=
+ENV MYSQL_USERNAME=
+ENV MYSQL_PASSWORD=
+
+ENV REDDIT_CLIENT_ID=
+ENV REDDIT_CLIENT_SECRET=
+ENV REDDIT_USERNAME=
+ENV REDDIT_PASSWORD=
+ENV REDDIT_USER_AGENT=
+
+ENV TELEGRAM_BOT_TOKEN=
+ENV TELEGRAM_BOT_USERNAME=
+
+# KEEP IN MIND THESE BELOW DO NOT HAVE THE NEW ENV VARIABLES!!!
 # Use environment variables from host
-ENTRYPOINT ["java", \
-    "-Dspring.datasource.url=${MYSQL_URL}", \
-    "-Dspring.datasource.username=${MYSQL_USERNAME}", \
-    "-Dspring.datasource.password=${MYSQL_PASSWORD}", \
-    "-Dreddit.client-id=${REDDIT_CLIENT_ID}", \
-    "-Dreddit.user-agent=${REDDIT_USER_AGENT}", \
-    "-Dtelegram.bot-token=${TELEGRAM_BOT_TOKEN}", \
-    "-Dtelegram.bot-username=${TELEGRAM_BOT_USERNAME}", \
-    "-jar", "app.jar"]
+# ENTRYPOINT ["java", \
+#     "-Dspring.datasource.url=${MYSQL_URL}", \
+#     "-Dspring.datasource.username=${MYSQL_USERNAME}", \
+#     "-Dspring.datasource.password=${MYSQL_PASSWORD}", \
+#     "-Dreddit.client-id=${REDDIT_CLIENT_ID}", \
+#     "-Dreddit.user-agent=${REDDIT_USER_AGENT}", \
+#     "-Dtelegram.bot-token=${TELEGRAM_BOT_TOKEN}", \
+#     "-Dtelegram.bot-username=${TELEGRAM_BOT_USERNAME}", \
+#     "-jar", "app.jar"]
+
+ENTRYPOINT SERVER_PORT=${PORT} java -jar app.jar

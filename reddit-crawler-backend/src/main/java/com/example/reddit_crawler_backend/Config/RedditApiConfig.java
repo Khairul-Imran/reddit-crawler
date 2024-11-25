@@ -15,6 +15,18 @@ public class RedditApiConfig {
     @Value("${reddit.user-agent}")
     private String userAgent;
 
+    @Value("${reddit.client-id}")
+    private String clientId;
+
+    @Value("${reddit.client-secret}")
+    private String clientSecret;
+
+    @Value("${reddit.username}")
+    private String username;
+
+    @Value("${reddit.password}")
+    private String password;
+
     @Value("${redditapi.timeout}")
     private int timeout;
 
@@ -36,6 +48,22 @@ public class RedditApiConfig {
 
     public String getUserAgent() {
         return userAgent;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
     }
 
     public int getTimeout() {

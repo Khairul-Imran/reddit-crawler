@@ -1,17 +1,24 @@
 package com.example.reddit_crawler_backend.Services;
 
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -27,6 +34,9 @@ import com.example.reddit_crawler_backend.Utils.RedditDataParser;
 
 @Service
 public class RedditService {
+
+    private String accessToken;
+    private Instant tokenExpiry;
     
     private final RestTemplate restTemplate;
     private final RedditApiConfig config;
@@ -52,14 +62,20 @@ public class RedditService {
 
     public RedditApiResponse getTop20Posts(String subreddit) throws RedditServiceException {
         try {
+            String token = getAccessToken();
+            logger.info("Got access token, making request...");
+
             String url = buildUrl(subreddit);
             logger.info("Making request to Reddit API: {}", url);
 
             RequestEntity<Void> request = RequestEntity
                 .get(url)
-                .headers(createHttpHeaders())
+                .headers(createHttpHeaders(token)) // Token here
                 .accept(MediaType.APPLICATION_JSON)
                 .build();
+                
+            logger.info("Request: {}", request);
+            logger.info("Using Reddit user agent: '{}'", config.getUserAgent());
 
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
             
@@ -91,6 +107,7 @@ public class RedditService {
             }
         } catch (HttpClientErrorException hcee) {
             logger.error("Client error when fetching Reddit data: Status: {}, Response: {}", hcee.getStatusCode(), hcee.getResponseBodyAsString());
+            // logger.error("Request headers were: {}", hcee.getRequestHeaders());
             throw hcee;
         } catch (RestClientException rce) {
             logger.error("Error fetching Reddit data for subreddit: {}", subreddit, rce);
@@ -98,6 +115,60 @@ public class RedditService {
         } catch (RedditDataParsingException rdpe) {
             logger.error("Error parsing Reddit data for subreddit: {}", subreddit, rdpe);
             throw new RedditServiceException("Failed to parse Reddit data", rdpe);
+        }
+    }
+
+
+    private String getAccessToken() {
+        try {
+            if (accessToken == null || Instant.now().isAfter(tokenExpiry)) {
+                // Create authentication string
+                String authString = config.getClientId() + ":" + config.getClientSecret();
+                String encodedAuth = Base64.getEncoder().encodeToString(authString.getBytes());
+
+                // Set up headers
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Authorization", "Basic " + encodedAuth);  // Changed from setBasicAuth
+                headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                headers.set("User-Agent", config.getUserAgent());
+
+                // Set up body
+                MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+                body.add("grant_type", "password");
+                body.add("username", config.getUsername());
+                body.add("password", config.getPassword());
+
+    
+                HttpEntity<MultiValueMap<String, String>> request = 
+                    new HttpEntity<>(body, headers);
+
+                // Log the request (but mask sensitive info)
+                logger.info("Requesting access token with headers: {}", 
+                    headers.entrySet().stream()
+                        .filter(e -> !e.getKey().equals("Authorization"))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+                );
+    
+                ResponseEntity<Map> response = restTemplate.postForEntity(
+                    "https://oauth.reddit.com/api/v1/access_token", // Here
+                    request,
+                    Map.class
+                );
+
+                if (response.getBody() == null || !response.getBody().containsKey("access_token")) {
+                    logger.error("Failed to get access token. Response: {}", response.getBody());
+                    throw new RedditServiceException("Failed to obtain access token from Reddit");
+                }
+    
+                accessToken = (String) response.getBody().get("access_token");
+                tokenExpiry = Instant.now().plusSeconds(3600); // Token valid for 1 hour
+
+                logger.info("New access token obtained, valid until: {}", tokenExpiry);
+            }
+            return accessToken;
+        } catch (RestClientException e) {
+            logger.error("Error obtaining Reddit access token: ", e);
+            throw new RedditServiceException("Failed to obtain Reddit access token", e);
         }
     }
 
@@ -129,15 +200,17 @@ public class RedditService {
     private String buildUrl(String subreddit) {
         return UriComponentsBuilder
             // https://www.reddit.com/r/memes/top.json?t=day
-            .fromHttpUrl(config.getApiUrl() + "/r/" + subreddit + "/top.json")
+            // .fromHttpUrl(config.getApiUrl() + "/r/" + subreddit + "/top.json")
+            .fromHttpUrl("https://oauth.reddit.com/r/" + subreddit + "/top")  // Remove .json
             .queryParam("limit", "20")
             .queryParam("t", "day") // Currently this gives us the results for past 24 hours
             .queryParam("raw_json", "1")
             .toUriString();
     }
 
-    private HttpHeaders createHttpHeaders() {
+    private HttpHeaders createHttpHeaders(String token) {
         HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token); // Here
         headers.set("User-Agent", config.getUserAgent());
         headers.set("Accept", "application/json");
         return headers;
