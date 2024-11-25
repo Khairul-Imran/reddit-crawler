@@ -25,3 +25,7 @@ dist-ssr
 
 .env
 .env.local
+*.env
+
+# But keep example files
+!.env.example

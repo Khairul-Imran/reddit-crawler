@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { RedditApiResponse, RedditPost } from "../types/RedditPostData";
+import { RedditPost } from "../types/RedditPostData";
 import { redditDataApi } from "../services/api/redditDataApi";
 import { ApiError } from "../services/api/baseApi";
 
