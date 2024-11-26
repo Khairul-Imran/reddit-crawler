@@ -118,7 +118,7 @@ public class RedditService {
         }
     }
 
-
+    // For OAuth2 Authentication
     private String getAccessToken() {
         try {
             if (accessToken == null || Instant.now().isAfter(tokenExpiry)) {
@@ -142,10 +142,10 @@ public class RedditService {
                 HttpEntity<MultiValueMap<String, String>> request = 
                     new HttpEntity<>(body, headers);
 
-                // Log the request (but mask sensitive info)
+                // Logging the request (but mask sensitive info)
                 logger.info("Requesting access token with headers: {}", 
                     headers.entrySet().stream()
-                        .filter(e -> !e.getKey().equals("Authorization"))
+                        .filter(e -> !e.getKey().equals("Authorization")) // Get all the headers that do not have the key "Authorization"
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
                 );
     
