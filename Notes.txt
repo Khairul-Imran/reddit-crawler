@@ -1,0 +1,21 @@
+Docker build command used:
+docker build \                                                
+  --build-arg VITE_TELEGRAM_BOT_USERNAME=$VITE_TELEGRAM_BOT_USERNAME \
+  -t reddit-crawler .
+
+
+If running the docker container for testing:
+docker run -p 8080:8080 \
+  -e MYSQL_URL \
+  -e MYSQL_USERNAME \
+  -e MYSQL_PASSWORD \
+  -e REDDIT_CLIENT_ID \
+  -e REDDIT_USER_AGENT \
+  -e TELEGRAM_BOT_TOKEN \
+  -e TELEGRAM_BOT_USERNAME \
+(Note: some variables might not have been added yet above)
+
+
+docker-compose up --build
+
+docker-compose down
