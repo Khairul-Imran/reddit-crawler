@@ -19,3 +19,29 @@ docker run -p 8080:8080 \
 docker-compose up --build
 
 docker-compose down
+
+
+Updated docker commands (from claude - did when preparing for microsec interview):
+
+docker build \
+  --build-arg VITE_TELEGRAM_BOT_USERNAME=your_telegram_bot_username \
+  -t reddit-crawler:latest .
+
+
+docker run -p 8080:8080 \
+  -e MYSQL_URL=jdbc:mysql://your-db-host:3306/your-db-name \
+  -e MYSQL_USERNAME=your-username \
+  -e MYSQL_PASSWORD=your-password \
+  -e REDDIT_CLIENT_ID=your-reddit-client-id \
+  -e REDDIT_CLIENT_SECRET=your-reddit-secret \
+  -e REDDIT_USERNAME=your-reddit-username \
+  -e REDDIT_PASSWORD=your-reddit-password \
+  -e REDDIT_USER_AGENT=your-user-agent \
+  -e TELEGRAM_BOT_TOKEN=your-telegram-token \
+  -e TELEGRAM_BOT_USERNAME=your-telegram-username \
+  reddit-crawler:latest
+
+
+You could also put these environment variables in a .env file and use:
+
+docker run -p 8080:8080 --env-file .env reddit-crawler:latest
