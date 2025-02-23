@@ -46,11 +46,13 @@ pipeline {
         stage('Push image to Docker Hub') {
             steps {
                 script {
-                    // Login to Docker Hub
-                    sh "echo ${DOCKER_CREDENTIALS_PSW} | docker login -u ${DOCKER_CREDENTIALS_USR} --password-stdin"
-                    
-                    // Push the image
-                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        // Login to Docker Hub
+                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+
+                        // Push the image
+                        sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    }
                 }
             }
         }
@@ -58,32 +60,55 @@ pipeline {
         stage('Deploy to Ubuntu Server') {
             steps {
                 script {
-                    // Using the SSH credentials
-                    sshagent(['ubuntu-server-ssh']) {
-                        // SSH into Ubuntu server and run the container
-                        sh """
-                            ssh -o StrictHostKeyChecking=no -p 2222 deploy@localhost '
-                                docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
-                                docker stop reddit-crawler || true
-                                docker rm reddit-crawler || true
-                                docker run -d \\
-                                    --name reddit-crawler \\
-                                    --network jenkins \\
-                                    -p 8080:8080 \\
-                                    -e MYSQL_URL=${MYSQL_URL} \\
-                                    -e MYSQL_USERNAME=${MYSQL_USERNAME} \\
-                                    -e MYSQL_PASSWORD=${MYSQL_PASSWORD} \\
-                                    -e REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID} \\
-                                    -e REDDIT_CLIENT_SECRET=${REDDIT_CLIENT_SECRET} \\
-                                    -e REDDIT_USERNAME=${REDDIT_USERNAME} \\
-                                    -e REDDIT_PASSWORD=${REDDIT_PASSWORD} \\
-                                    -e REDDIT_USER_AGENT=${REDDIT_USER_AGENT} \\
-                                    -e TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN} \\
-                                    -e TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME} \\
-                                    ${DOCKER_IMAGE}:${DOCKER_TAG}
-                            '
-                        """
+                    try {
+                        // Using the SSH credentials
+                        sshagent(['ubuntu-server-ssh']) {
+                            withCredentials([
+                                // Might just do the same for all the variables, not just the sensitive ones. TODO
+                                string(credentialsId: 'mysql-password', variable: 'DB_PASS'),
+                                string(credentialsId: 'reddit-client-secret', variable: 'REDDIT_SECRET'),
+                                string(credentialsId: 'reddit-password', variable: 'REDDIT_PASS'),
+                                string(credentialsId: 'telegram-bot-token', variable: 'BOT_TOKEN')
+                            ]) {
+                                // SSH into Ubuntu server and run the container
+                                sh """
+                                    ssh -o StrictHostKeyChecking=no -p 2222 deploy@localhost '
+                                        docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                        docker stop reddit-crawler || true
+                                        docker rm reddit-crawler || true
+                                        docker run -d \\
+                                            --name reddit-crawler \\
+                                            --network jenkins \\
+                                            -p 8080:8080 \\
+                                            -e MYSQL_URL=${MYSQL_URL} \\
+                                            -e MYSQL_USERNAME=${MYSQL_USERNAME} \\
+                                            -e MYSQL_PASSWORD=${DB_PASS} \\
+                                            -e REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID} \\
+                                            -e REDDIT_CLIENT_SECRET=${REDDIT_SECRET} \\
+                                            -e REDDIT_USERNAME=${REDDIT_USERNAME} \\
+                                            -e REDDIT_PASSWORD=${REDDIT_PASS} \\
+                                            -e REDDIT_USER_AGENT=${REDDIT_USER_AGENT} \\
+                                            -e TELEGRAM_BOT_TOKEN=${BOT_TOKEN} \\
+                                            -e TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME} \\
+                                            ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                    '
+                                """
+                            }
+                        }
+                    } catch (err) {
+                        echo "Deployment failed: ${err}"
+                        currentBuild.result = 'FAILURE'
+                        throw err
                     }
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    sleep(10) // Give the container time to start
+                    sh 'curl -f http://localhost:8080 || exit 1'
                 }
             }
         }

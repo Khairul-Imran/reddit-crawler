@@ -1,5 +1,5 @@
 # Build frontend
-FROM node:20-alpine as frontend-build
+FROM node:20-alpine AS frontend-build
 
 # WORKDIR /reddit-crawler-frontend
 WORKDIR /reactapp
@@ -18,7 +18,7 @@ RUN npm install
 RUN npm run build
 
 # Build backend
-FROM eclipse-temurin:22-jdk-alpine as backend-build
+FROM eclipse-temurin:22-jdk-alpine AS backend-build
 
 # WORKDIR /reddit-crawler-backend
 WORKDIR /sbapp
@@ -64,4 +64,12 @@ ENV TELEGRAM_BOT_USERNAME=
 
 # Starts the spring-boot application, 
 # Sets the server port from the environment variable ${PORT}
-ENTRYPOINT SERVER_PORT=${PORT} java -jar app.jar
+# Changed this - 23 Feb
+# ENTRYPOINT SERVER_PORT=${PORT} java -jar app.jar
+
+# New
+# ENTRYPOINT ["java", "-jar", "app.jar"]
+# CMD ["--server.port=${PORT}"]
+
+# Newer
+ENTRYPOINT ["java", "-Dserver.port=${PORT}", "-jar", "app.jar"]
