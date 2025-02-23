@@ -35,9 +35,11 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                // Build the Docker image using the multi-stage Dockerfile
-                // Recall we installed the Docker pipeline plugin
-                docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}", "--build-arg VITE_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME} .")
+                script {
+                    // Build the Docker image using the multi-stage Dockerfile
+                    // Recall we installed the Docker pipeline plugin
+                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}", "--build-arg VITE_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME} .")
+                }
             }
         }
 
