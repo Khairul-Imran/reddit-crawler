@@ -41,3 +41,14 @@ application-local.properties
 # Ignore any properties files containing "local" or "secret"
 *local*.properties
 *secret*.properties
+
+# SSH Keys
+*.pem
+*_key
+*_key.pub
+*.key
+*.pub
+
+# Other sensitive files
+*.env
+.env*
