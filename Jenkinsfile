@@ -72,7 +72,7 @@ pipeline {
                             ]) {
                                 // SSH into Ubuntu server and run the container
                                 sh """
-                                    ssh -o StrictHostKeyChecking=no -p 2222 deploy@localhost '
+                                    ssh -o StrictHostKeyChecking=no -p 22 deploy@ubuntu-server '
                                         docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
                                         docker stop reddit-crawler || true
                                         docker rm reddit-crawler || true
