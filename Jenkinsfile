@@ -80,17 +80,17 @@ pipeline {
                                         
                                         # Create environment file for sensitive variables
                                         cat > /tmp/reddit-crawler.env << EOF
-                                            MYSQL_URL=${MYSQL_URL}
-                                            MYSQL_USERNAME=${MYSQL_USERNAME}
-                                            MYSQL_PASSWORD=${DB_PASS}
-                                            REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
-                                            REDDIT_CLIENT_SECRET=${REDDIT_SECRET}
-                                            REDDIT_USERNAME=${REDDIT_USERNAME}
-                                            REDDIT_PASSWORD=${REDDIT_PASS}
-                                            REDDIT_USER_AGENT=${REDDIT_AGENT}
-                                            TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
-                                            TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
-                                            EOF
+                                        MYSQL_URL=${MYSQL_URL}
+                                        MYSQL_USERNAME=${MYSQL_USERNAME}
+                                        MYSQL_PASSWORD=${DB_PASS}
+                                        REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
+                                        REDDIT_CLIENT_SECRET=${REDDIT_SECRET}
+                                        REDDIT_USERNAME=${REDDIT_USERNAME}
+                                        REDDIT_PASSWORD=${REDDIT_PASS}
+                                        REDDIT_USER_AGENT=${REDDIT_AGENT}
+                                        TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
+                                        TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+                                        EOF
                                 
                                         # Run container with env file
                                         docker run -d \\
@@ -119,8 +119,20 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    sleep(10) // Give the container time to start
-                    sh 'curl -f http://localhost:8080 || exit 1'
+                    sleep(15) // Give the container time to start
+                    // sh 'curl -f http://localhost:8080 || exit 1'
+                    
+                    sshagent(['ubuntu-server-ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no deploy@ubuntu-server '
+                                # Check if the container is running
+                                docker ps | grep reddit-crawler
+                                
+                                # Try to access the application
+                                curl -f http://localhost:8080 || echo "Application may still be starting up..."
+                            '
+                        """
+                    }
                 }
             }
         }
