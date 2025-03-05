@@ -68,7 +68,8 @@ pipeline {
                                 string(credentialsId: 'mysql-password', variable: 'DB_PASS'),
                                 string(credentialsId: 'reddit-client-secret', variable: 'REDDIT_SECRET'),
                                 string(credentialsId: 'reddit-password', variable: 'REDDIT_PASS'),
-                                string(credentialsId: 'telegram-bot-token', variable: 'BOT_TOKEN')
+                                string(credentialsId: 'telegram-bot-token', variable: 'BOT_TOKEN'),
+                                string(credentialsId: 'reddit-user-agent', variable: 'REDDIT_AGENT') // Added this
                             ]) {
                                 // SSH into Ubuntu server and run the container
                                 sh """
@@ -76,21 +77,32 @@ pipeline {
                                         docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
                                         docker stop reddit-crawler || true
                                         docker rm reddit-crawler || true
+                                        
+                                        # Create environment file for sensitive variables
+                                        cat > /tmp/reddit-crawler.env << EOF
+                                            MYSQL_URL=${MYSQL_URL}
+                                            MYSQL_USERNAME=${MYSQL_USERNAME}
+                                            MYSQL_PASSWORD=${DB_PASS}
+                                            REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
+                                            REDDIT_CLIENT_SECRET=${REDDIT_SECRET}
+                                            REDDIT_USERNAME=${REDDIT_USERNAME}
+                                            REDDIT_PASSWORD=${REDDIT_PASS}
+                                            REDDIT_USER_AGENT=${REDDIT_AGENT}
+                                            TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
+                                            TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+                                            EOF
+                                
+                                        # Run container with env file
                                         docker run -d \\
                                             --name reddit-crawler \\
                                             --network jenkins \\
                                             -p 8080:8080 \\
-                                            -e MYSQL_URL=${MYSQL_URL} \\
-                                            -e MYSQL_USERNAME=${MYSQL_USERNAME} \\
-                                            -e MYSQL_PASSWORD=${DB_PASS} \\
-                                            -e REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID} \\
-                                            -e REDDIT_CLIENT_SECRET=${REDDIT_SECRET} \\
-                                            -e REDDIT_USERNAME=${REDDIT_USERNAME} \\
-                                            -e REDDIT_PASSWORD=${REDDIT_PASS} \\
-                                            -e REDDIT_USER_AGENT=${REDDIT_USER_AGENT} \\
-                                            -e TELEGRAM_BOT_TOKEN=${BOT_TOKEN} \\
-                                            -e TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME} \\
+                                            --env-file /tmp/reddit-crawler.env \\
                                             ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                            
+                                        # Remove sensitive env file
+                                        rm /tmp/reddit-crawler.env
+
                                     '
                                 """
                             }
