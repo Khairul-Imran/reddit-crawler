@@ -193,7 +193,7 @@ EOF
                                 apt-get install -y curl net-tools >/dev/null 2>&1 || true
 
                                 echo "=== System Port Status ==="
-                                netstat -tulpn 2>/dev/null | grep :${APP_PORT} || echo "No process listening on ${APP_PORT}"
+                                netstat -tulpn 2>/dev/null | grep :${HOST_PORT} || echo "No process listening on ${HOST_PORT}"
                                 
                                 echo "=== Application Connectivity Test ==="
                                 echo "Testing host port ${HOST_PORT}..."
