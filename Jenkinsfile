@@ -26,7 +26,7 @@ pipeline {
         DOCKER_CREDENTIALS = credentials('dockerhub-credentials')
 
         // Application configs - Using port 9090 to avoid conflicts with Jenkins (8080)
-        HOST_PORT = "9090" 
+        HOST_PORT = "8888" 
         CONTAINER_PORT = "8080" // Keep the container port at 8080 as expected by the app
     }
 
