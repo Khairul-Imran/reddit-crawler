@@ -25,8 +25,9 @@ pipeline {
         // Docker Hub credentials
         DOCKER_CREDENTIALS = credentials('dockerhub-credentials')
 
-        // Application configs
-        APP_PORT = "8080" // Match with our app
+        // Application configs - Using port 9090 to avoid conflicts with Jenkins (8080)
+        HOST_PORT = "9090" 
+        CONTAINER_PORT = "8080" // Keep the container port at 8080 as expected by the app
     }
 
     stages {
@@ -76,10 +77,10 @@ pipeline {
                                 docker network ls
                                 
                                 echo "=== Port Usage ==="
-                                # Check if port ${APP_PORT} is in use
                                 apt-get update -qq >/dev/null 2>&1 || true
                                 apt-get install -y net-tools >/dev/null 2>&1 || true
-                                netstat -tulpn 2>/dev/null | grep :${APP_PORT} || echo "Port ${APP_PORT} appears to be free"
+                                echo "Checking host port ${HOST_PORT}:"
+                                netstat -tulpn 2>/dev/null | grep :${HOST_PORT} || echo "Port ${HOST_PORT} appears to be free"
                                 
                                 echo "=== Existing Containers ==="
                                 docker ps -a
@@ -104,19 +105,6 @@ pipeline {
                                 string(credentialsId: 'telegram-bot-token', variable: 'BOT_TOKEN'),
                                 string(credentialsId: 'reddit-user-agent', variable: 'REDDIT_AGENT') // Added this
                             ]) {
-                                // Kill any existing process on port 8080
-                                sh """
-                                   ssh -o StrictHostKeyChecking=no -p 22 deploy@ubuntu-server '
-                                       apt-get update -qq >/dev/null 2>&1 || true
-                                       apt-get install -y lsof >/dev/null 2>&1 || true
-                                       PID=\$(lsof -ti:${APP_PORT} 2>/dev/null) || true
-                                       if [ -n "\$PID" ]; then
-                                           echo "Killing process \$PID using port ${APP_PORT}"
-                                           kill -9 \$PID || true
-                                       fi
-                                   '
-                                """
-
                                 // Create deployment script with proper docker run command
                                 def deployScript = """
                                     # Ensure network exists
@@ -141,13 +129,13 @@ REDDIT_PASSWORD=${REDDIT_PASS}
 REDDIT_USER_AGENT=${REDDIT_AGENT}
 TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
 TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
-PORT=${APP_PORT}
+PORT=${CONTAINER_PORT}
 EOF
                                     echo "Starting container..."
                                     
                                     docker run -d --name reddit-crawler \\
                                         --network jenkins \\
-                                        -p ${APP_PORT}:${APP_PORT} \\
+                                        -p ${HOST_PORT}:${CONTAINER_PORT} \\
                                         --env-file /tmp/reddit-crawler.env \\
                                         ${DOCKER_IMAGE}:${DOCKER_TAG}
                                     
@@ -159,8 +147,10 @@ EOF
                                         echo "Container started successfully!"
                                         docker logs reddit-crawler | tail -n 20
                                     else
-                                        echo "Container failed to start!"
+                                        echo "Container failed to start. Checking status:"
                                         docker ps -a | grep reddit-crawler
+                                        echo "Checking container logs for errors:"
+                                        docker logs reddit-crawler 2>&1 || echo "No logs available"
                                     fi
                                         
                                     echo "Removing sensitive env file..."
@@ -192,6 +182,9 @@ EOF
                                 echo "=== Container Status ==="
                                 docker ps -a | grep reddit-crawler || echo "Container not found"
 
+                                echo "=== Port Bindings ==="
+                                docker port reddit-crawler || echo "No port bindings found"
+
                                 echo "=== Application Status ==="
                                 docker logs reddit-crawler | tail -n 50 || echo "Cannot access logs"
 
@@ -202,26 +195,22 @@ EOF
                                 echo "=== System Port Status ==="
                                 netstat -tulpn 2>/dev/null | grep :${APP_PORT} || echo "No process listening on ${APP_PORT}"
                                 
-                                echo "=== Port Bindings ==="
-                                docker port reddit-crawler || echo "No port bindings found"
-                                
                                 echo "=== Application Connectivity Test ==="
-                                echo "Testing localhost..."
-                                curl -v http://localhost:${APP_PORT} || echo "Application not responding on localhost"
+                                echo "Testing host port ${HOST_PORT}..."
+                                curl -m 5 -v http://localhost:${HOST_PORT} || echo "Application not responding on localhost:${HOST_PORT}"
                                 
-                                echo "Testing container IP directly..."
+                                echo "Testing container on internal port ${CONTAINER_PORT}..."
                                 CONTAINER_IP=\$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" reddit-crawler)
                                 if [ -n "\$CONTAINER_IP" ]; then
                                     echo "Container IP: \$CONTAINER_IP"
-                                    curl -v http://\$CONTAINER_IP:${APP_PORT} || echo "Application not responding on container IP"
+                                    curl -m 5 -v http://\$CONTAINER_IP:${CONTAINER_PORT} || echo "Application not responding on container IP"
                                 fi
                                 
-                                echo "=== Network Troubleshooting ==="
-                                docker exec reddit-crawler sh -c "wget -O- http://localhost:${APP_PORT} 2>/dev/null || echo Failed to connect internally"
-                                docker exec reddit-crawler sh -c "cat /etc/hosts"
+                                echo "=== Internal Container Test ==="
+                                docker exec reddit-crawler sh -c "wget -O- --timeout=5 http://localhost:${CONTAINER_PORT} 2>/dev/null || echo Failed to connect internally"
                                 
-                                echo "=== Checking if Java process is running in container ==="
-                                docker exec reddit-crawler ps aux || echo "Cannot check processes in container"
+                                echo "=== Java Process in Container ==="
+                                docker exec reddit-crawler ps aux | grep java || echo "Java process not found"
                             '
                         """
                     }
@@ -231,6 +220,12 @@ EOF
     }
 
     post {
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed. Please check the logs for details."
+        }
         always {
             // Logout from Docker Hub
             sh 'docker logout'
