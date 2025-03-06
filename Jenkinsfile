@@ -74,22 +74,22 @@ pipeline {
                                 // SSH into Ubuntu server and run the container
                                 sh """
                                     ssh -o StrictHostKeyChecking=no -p 22 deploy@ubuntu-server '
-                                        docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                        docker pull \${DOCKER_IMAGE}:\${DOCKER_TAG}
                                         docker stop reddit-crawler || true
                                         docker rm reddit-crawler || true
                                         
                                         echo "Creating environment file for sensitive variables..."
                                         cat > /tmp/reddit-crawler.env << EOF
-                                        MYSQL_URL=${MYSQL_URL}
-                                        MYSQL_USERNAME=${MYSQL_USERNAME}
-                                        MYSQL_PASSWORD=${DB_PASS}
-                                        REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
-                                        REDDIT_CLIENT_SECRET=${REDDIT_SECRET}
-                                        REDDIT_USERNAME=${REDDIT_USERNAME}
-                                        REDDIT_PASSWORD=${REDDIT_PASS}
-                                        REDDIT_USER_AGENT=${REDDIT_AGENT}
-                                        TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
-                                        TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+                                        MYSQL_URL=\${MYSQL_URL}
+                                        MYSQL_USERNAME=\${MYSQL_USERNAME}
+                                        MYSQL_PASSWORD=\${DB_PASS}
+                                        REDDIT_CLIENT_ID=\${REDDIT_CLIENT_ID}
+                                        REDDIT_CLIENT_SECRET=\${REDDIT_SECRET}
+                                        REDDIT_USERNAME=\${REDDIT_USERNAME}
+                                        REDDIT_PASSWORD=\${REDDIT_PASS}
+                                        REDDIT_USER_AGENT=\${REDDIT_AGENT}
+                                        TELEGRAM_BOT_TOKEN=\${BOT_TOKEN}
+                                        TELEGRAM_BOT_USERNAME=\${TELEGRAM_BOT_USERNAME}
 EOF
                                 
                                         echo "Starting container..."
