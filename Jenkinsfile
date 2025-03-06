@@ -25,9 +25,11 @@ pipeline {
         // Docker Hub credentials
         DOCKER_CREDENTIALS = credentials('dockerhub-credentials')
 
-        // Application configs - Using port 9090 to avoid conflicts with Jenkins (8080)
-        HOST_PORT = "8888" 
-        CONTAINER_PORT = "8080" // Keep the container port at 8080 as expected by the app
+        // Application configs
+        // Using port 9898 inside the Ubuntu container (internal port)
+        UBUNTU_PORT = "9898" 
+        // Application continues to run on 8080 inside its own container
+        CONTAINER_PORT = "8080"
     }
 
     stages {
@@ -79,8 +81,8 @@ pipeline {
                                 echo "=== Port Usage ==="
                                 apt-get update -qq >/dev/null 2>&1 || true
                                 apt-get install -y net-tools >/dev/null 2>&1 || true
-                                echo "Checking host port ${HOST_PORT}:"
-                                netstat -tulpn 2>/dev/null | grep :${HOST_PORT} || echo "Port ${HOST_PORT} appears to be free"
+                                echo "Checking Ubuntu internal port ${UBUNTU_PORT}:"
+                                netstat -tulpn 2>/dev/null | grep :${UBUNTU_PORT} || echo "Port ${UBUNTU_PORT} appears to be free"
                                 
                                 echo "=== Existing Containers ==="
                                 docker ps -a
@@ -135,7 +137,7 @@ EOF
                                     
                                     docker run -d --name reddit-crawler \\
                                         --network jenkins \\
-                                        -p ${HOST_PORT}:${CONTAINER_PORT} \\
+                                        -p ${UBUNTU_PORT}:${CONTAINER_PORT} \\
                                         --env-file /tmp/reddit-crawler.env \\
                                         ${DOCKER_IMAGE}:${DOCKER_TAG}
                                     
@@ -193,11 +195,11 @@ EOF
                                 apt-get install -y curl net-tools >/dev/null 2>&1 || true
 
                                 echo "=== System Port Status ==="
-                                netstat -tulpn 2>/dev/null | grep :${HOST_PORT} || echo "No process listening on ${HOST_PORT}"
+                                netstat -tulpn 2>/dev/null | grep :${UBUNTU_PORT} || echo "No process listening on ${UBUNTU_PORT}"
                                 
                                 echo "=== Application Connectivity Test ==="
-                                echo "Testing host port ${HOST_PORT}..."
-                                curl -m 5 -v http://localhost:${HOST_PORT} || echo "Application not responding on localhost:${HOST_PORT}"
+                                echo "Testing Ubuntu internal port ${UBUNTU_PORT}..."
+                                curl -m 5 -v http://localhost:${UBUNTU_PORT} || echo "Application not responding on localhost:${UBUNTU_PORT}"
                                 
                                 echo "Testing container on internal port ${CONTAINER_PORT}..."
                                 CONTAINER_IP=\$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" reddit-crawler)
@@ -222,6 +224,8 @@ EOF
     post {
         success {
             echo "Pipeline completed successfully!"
+            echo "Your application should be accessible at http://your-host-ip:8888"
+            echo "The port mapping chain is: Host:8888 -> Ubuntu:8888 -> Ubuntu:9898 -> Container:8080"
         }
         failure {
             echo "Pipeline failed. Please check the logs for details."
