@@ -78,7 +78,7 @@ pipeline {
                                         docker stop reddit-crawler || true
                                         docker rm reddit-crawler || true
                                         
-                                        # Create environment file for sensitive variables
+                                        echo "Creating environment file for sensitive variables..."
                                         cat > /tmp/reddit-crawler.env << EOF
                                         MYSQL_URL=${MYSQL_URL}
                                         MYSQL_USERNAME=${MYSQL_USERNAME}
@@ -90,9 +90,9 @@ pipeline {
                                         REDDIT_USER_AGENT=${REDDIT_AGENT}
                                         TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
                                         TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
-                                        EOF
+EOF
                                 
-                                        # Run container with env file
+                                        echo "Starting container..."
                                         docker run -d \\
                                             --name reddit-crawler \\
                                             --network jenkins \\
@@ -100,7 +100,10 @@ pipeline {
                                             --env-file /tmp/reddit-crawler.env \\
                                             ${DOCKER_IMAGE}:${DOCKER_TAG}
                                             
+                                        echo "Container started with ID: $(docker ps -q --filter name=reddit-crawler)"
+                                        
                                         # Remove sensitive env file
+                                        echo "Removing sensitive env file..."
                                         rm /tmp/reddit-crawler.env
 
                                     '
@@ -125,11 +128,17 @@ pipeline {
                     sshagent(['ubuntu-server-ssh']) {
                         sh """
                             ssh -o StrictHostKeyChecking=no deploy@ubuntu-server '
-                                # Check if the container is running
-                                docker ps | grep reddit-crawler
+                                echo "Checking container status..."
+                                docker ps -a | grep reddit-crawler
+
+                                echo "Checking container logs..."
+                                docker logs reddit-crawler || echo "Cannot access logs"
+
+                                echo "Checking network connectivity..."
+                                netstat -tulpn | grep 8080 || echo "No process listening on 8080"
                                 
-                                # Try to access the application
-                                curl -f http://localhost:8080 || echo "Application may still be starting up..."
+                                echo "Attempting to access application..."
+                                curl -v http://localhost:8080 || echo "Application not responding"
                             '
                         """
                     }
