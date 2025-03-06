@@ -98,7 +98,7 @@ EOF
                                             --network jenkins \\
                                             -p 8080:8080 \\
                                             --env-file /tmp/reddit-crawler.env \\
-                                            \${DOCKER_IMAGE}:${DOCKER_TAG}
+                                            \${DOCKER_IMAGE}:\${DOCKER_TAG}
                                             
                                         echo "Container started with ID: $(docker ps -q --filter name=reddit-crawler)"
                                         
