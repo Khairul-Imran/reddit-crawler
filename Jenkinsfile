@@ -71,39 +71,37 @@ pipeline {
                                 string(credentialsId: 'telegram-bot-token', variable: 'BOT_TOKEN'),
                                 string(credentialsId: 'reddit-user-agent', variable: 'REDDIT_AGENT') // Added this
                             ]) {
-                                // SSH into Ubuntu server and run the container
-                                sh 'ssh -o StrictHostKeyChecking=no -p 22 deploy@ubuntu-server \'' +
-                                    'docker pull ' + env.DOCKER_IMAGE + ':' + env.DOCKER_TAG + ';' +
-                                    'docker stop reddit-crawler || true;' +
-                                    'docker rm reddit-crawler || true;' +
+                                // Create deployment script with proper docker run command
+                                def deployScript = """
+                                    docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                    docker stop reddit-crawler || true
+                                    docker rm reddit-crawler || true
                                     
-                                    'echo "Creating environment file for sensitive variables...";' +
-                                    'cat > /tmp/reddit-crawler.env << EOF\n' +
-                                    'MYSQL_URL=' + env.MYSQL_URL + '\n' +
-                                    'MYSQL_USERNAME=' + env.MYSQL_USERNAME + '\n' +
-                                    'MYSQL_PASSWORD=' + DB_PASS + '\n' +
-                                    'REDDIT_CLIENT_ID=' + env.REDDIT_CLIENT_ID + '\n' +
-                                    'REDDIT_CLIENT_SECRET=' + REDDIT_SECRET + '\n' +
-                                    'REDDIT_USERNAME=' + env.REDDIT_USERNAME + '\n' +
-                                    'REDDIT_PASSWORD=' + REDDIT_PASS + '\n' +
-                                    'REDDIT_USER_AGENT=' + REDDIT_AGENT + '\n' +
-                                    'TELEGRAM_BOT_TOKEN=' + BOT_TOKEN + '\n' +
-                                    'TELEGRAM_BOT_USERNAME=' + env.TELEGRAM_BOT_USERNAME + '\n' +
-                                    'EOF\n' +
+                                    echo "Creating environment file for sensitive variables..."
+                                    cat > /tmp/reddit-crawler.env << EOF
+MYSQL_URL=${MYSQL_URL}
+MYSQL_USERNAME=${MYSQL_USERNAME}
+MYSQL_PASSWORD=${DB_PASS}
+REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
+REDDIT_CLIENT_SECRET=${REDDIT_SECRET}
+REDDIT_USERNAME=${REDDIT_USERNAME}
+REDDIT_PASSWORD=${REDDIT_PASS}
+REDDIT_USER_AGENT=${REDDIT_AGENT}
+TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
+TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+EOF
+                                    echo "Starting container..."
                                     
-                                    'echo "Starting container...";' +
-                                    'docker run -d \\' +
-                                    '    --name reddit-crawler \\' +
-                                    '    --network jenkins \\' +
-                                    '    -p 8080:8080 \\' +
-                                    '    --env-file /tmp/reddit-crawler.env \\' +
-                                    '    ' + env.DOCKER_IMAGE + ':' + env.DOCKER_TAG + ';' +
-                                    
-                                    'echo "Container started with ID: $(docker ps -q --filter name=reddit-crawler)";' +
-                                    
-                                    'echo "Removing sensitive env file...";' +
-                                    'rm /tmp/reddit-crawler.env' +
-                                '\''
+                                    docker run -d --name reddit-crawler --network jenkins -p 8080:8080 --env-file /tmp/reddit-crawler.env ${DOCKER_IMAGE}:${DOCKER_TAG}
+
+                                    echo "Container started with ID: \$(docker ps -q --filter name=reddit-crawler)"
+                                        
+                                    echo "Removing sensitive env file..."
+                                    rm /tmp/reddit-crawler.env
+                                """
+
+                                // SSH into Ubuntu server and run the deployment script
+                                sh "ssh -o StrictHostKeyChecking=no -p 22 deploy@ubuntu-server '${deployScript}'"
                             }
                         }
                     } catch (err) {
@@ -125,7 +123,7 @@ pipeline {
                         sh """
                             ssh -o StrictHostKeyChecking=no deploy@ubuntu-server '
                                 echo "Checking container status..."
-                                docker ps -a | grep reddit-crawler
+                                docker ps -a | grep reddit-crawler || echo "Container not found"
 
                                 echo "Checking container logs..."
                                 docker logs reddit-crawler || echo "Cannot access logs"
