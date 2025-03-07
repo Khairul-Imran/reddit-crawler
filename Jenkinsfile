@@ -224,8 +224,8 @@ EOF
     post {
         success {
             echo "Pipeline completed successfully!"
-            echo "Your application should be accessible at http://your-host-ip:8888"
-            echo "The port mapping chain is: Host:8888 -> Ubuntu:8888 -> Ubuntu:9898 -> Container:8080"
+            echo "Your application should be accessible at http://your-host-ip:9898"
+            echo "The port mapping chain is: Host:9898 → Ubuntu:9898 → Container:8080"
         }
         failure {
             echo "Pipeline failed. Please check the logs for details."
