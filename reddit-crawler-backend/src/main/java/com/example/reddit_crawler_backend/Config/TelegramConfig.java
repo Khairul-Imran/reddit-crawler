@@ -9,10 +9,10 @@ import org.springframework.context.annotation.Configuration;
 // @Data
 public class TelegramConfig {
 
-    @Value("${telegram.bot-token}")
+    @Value("${TELEGRAM_BOT_TOKEN}")
     private String botToken;
 
-    @Value("${telegram.bot-username}")
+    @Value("${TELEGRAM_BOT_USERNAME}")
     private String botUsername;
 
     public String getBotToken() {
