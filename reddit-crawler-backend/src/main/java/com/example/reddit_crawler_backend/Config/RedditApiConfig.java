@@ -9,19 +9,19 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class RedditApiConfig {
     
-    @Value("${REDDIT_USER_AGENT}")
+    @Value("${reddit.user-agent}")
     private String userAgent;
     
-    @Value("${REDDIT_CLIENT_ID}")
+    @Value("${reddit.client-id}")
     private String clientId;
     
-    @Value("${REDDIT_CLIENT_SECRET}")
+    @Value("${reddit.client-secret}")
     private String clientSecret;
     
-    @Value("${REDDIT_USERNAME}")
+    @Value("${reddit.username}")
     private String username;
     
-    @Value("${REDDIT_PASSWORD}")
+    @Value("${reddit.password}")
     private String password;
 
     @Value("${reddit.base-url}")
